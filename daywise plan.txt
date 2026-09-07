@@ -1,0 +1,337 @@
+====================================================================
+MULTI-AGENT RESEARCH SYSTEM — 14 DAY BUILD PLAN
+Tech Stack (Overall): Python, LLMs, LangGraph, Agent Architecture,
+Tool Calling, MCP, Web Search APIs, RAG, Vector Database, PostgreSQL,
+FastAPI, Docker
+====================================================================
+
+--------------------------------------------------------------------
+DAY 1 — Agent Architecture Design + Project Skeleton
+--------------------------------------------------------------------
+DESCRIPTION:
+Design a supervisor-style multi-agent graph: Planner -> Researcher ->
+Writer -> Critic. Use Plan-and-Execute style (Planner creates a full
+task list upfront) instead of pure step-by-step ReAct, since it's
+easier to debug and explain. Define the shared state schema (query,
+plan, retrieved_docs, draft, critique, retry_count). Set up FastAPI
+app + LangGraph graph with stub nodes wired end-to-end, and Postgres
+for state persistence.
+
+TOOLS: Python, FastAPI, LangGraph, PostgreSQL, draw.io/Excalidraw
+(for architecture diagram)
+
+EXECUTION STRATEGY:
+1. Sketch the agent graph and state schema on paper first.
+2. Set up FastAPI project structure + Postgres connection.
+3. Create LangGraph StateGraph with 4 placeholder nodes.
+4. Verify a request flows through all 4 stub nodes end-to-end.
+
+INTERVIEW CONCEPT: Supervisor vs. decentralized agent architecture;
+ReAct vs. Plan-and-Execute.
+INTERVIEW Q: "How would you design a multi-agent system — supervisor
+or decentralized, and why?"
+
+--------------------------------------------------------------------
+DAY 2 — MCP Integration + Tool Calling Fundamentals
+--------------------------------------------------------------------
+DESCRIPTION:
+Integrate an existing MCP server for web search so the Researcher
+agent can call it as a tool. Implement proper JSON schema definitions
+for tool inputs/outputs. Handle malformed tool call errors cleanly.
+
+TOOLS: MCP (Model Context Protocol), Web Search API (e.g., Tavily/
+Serper/Bing), LangGraph tool-calling nodes, Anthropic/OpenAI API
+
+EXECUTION STRATEGY:
+1. Set up an existing MCP web-search server (don't build your own).
+2. Wire the Researcher agent to call it via LangGraph's tool node.
+3. Parse and validate tool results before passing to next node.
+4. Test with 3-4 varied search queries.
+
+INTERVIEW CONCEPT: Tool/function calling schemas; MCP as a
+standardized protocol.
+INTERVIEW Q: "Why does MCP matter compared to custom function-calling
+per provider?"
+
+--------------------------------------------------------------------
+DAY 3 — Reliability: Retries, Fallbacks, Timeouts
+--------------------------------------------------------------------
+DESCRIPTION:
+Add a second MCP tool (e.g., a page-fetch/scrape tool) so the
+Researcher can pull full content, not just snippets. Implement
+exponential backoff on tool failures, request timeouts, and a
+graceful fallback (agent admits it couldn't retrieve data instead
+of hallucinating an answer).
+
+TOOLS: MCP, Web Search APIs, Python (tenacity/backoff library),
+LangGraph conditional edges
+
+EXECUTION STRATEGY:
+1. Add second MCP tool alongside web search.
+2. Wrap tool calls with retry + backoff logic.
+3. Add a fallback branch in the graph for repeated tool failure.
+4. Simulate a failure (e.g., invalid API key) to confirm fallback
+   triggers correctly.
+
+INTERVIEW CONCEPT: Production reliability for tool-calling agents.
+INTERVIEW Q: "What happens when a tool call fails or times out in
+production?"
+
+--------------------------------------------------------------------
+DAY 4 — RAG Fundamentals: Embeddings + Chunking
+--------------------------------------------------------------------
+DESCRIPTION:
+Set up a vector database and build an ingestion pipeline: chunk
+documents (fixed-size with overlap), embed them, and store in the
+vector DB. Merge retrieved local context with live web search
+results inside the Researcher agent's output.
+
+TOOLS: ChromaDB or FAISS, OpenAI/Anthropic embeddings API, Python
+(LangChain text splitters optional)
+
+EXECUTION STRATEGY:
+1. Choose ChromaDB (simplest local setup).
+2. Build ingestion script: load docs -> chunk -> embed -> store.
+3. Add a retrieval step in the Researcher node.
+4. Test retrieval relevance manually on 5 sample queries.
+
+INTERVIEW CONCEPT: Embeddings, chunking strategy, retrieval quality.
+INTERVIEW Q: "How do you decide chunk size, and what breaks if it's
+wrong?"
+
+--------------------------------------------------------------------
+DAY 5 — Re-ranking + Hybrid Retrieval
+--------------------------------------------------------------------
+DESCRIPTION:
+Improve retrieval quality by adding a re-ranking step (cross-encoder
+or LLM-based re-rank) and filtering out low-relevance chunks before
+they reach the Writer agent. Optionally combine keyword search with
+semantic search (hybrid retrieval).
+
+TOOLS: ChromaDB/FAISS, Cross-encoder model or LLM-as-re-ranker,
+Python
+
+EXECUTION STRATEGY:
+1. Retrieve top-K candidates from vector DB (K larger than needed).
+2. Re-rank candidates using a cross-encoder or an LLM relevance
+   scoring prompt.
+3. Keep only top-N after re-ranking; discard the rest.
+4. Compare answer quality before/after re-ranking on test queries.
+
+INTERVIEW CONCEPT: Retrieval quality techniques — re-ranking, hybrid
+search, relevance filtering.
+INTERVIEW Q: "Your RAG system returns irrelevant context — how do
+you debug and fix it?"
+
+--------------------------------------------------------------------
+DAY 6 — Prompt Engineering + Structured Outputs
+--------------------------------------------------------------------
+DESCRIPTION:
+Write distinct, tested system prompts for each agent (Planner,
+Researcher, Writer, Critic). Enforce structured output using Pydantic
+schemas so agent-to-agent handoffs are reliably machine-readable
+instead of free text.
+
+TOOLS: Python (Pydantic), LLM structured output / JSON mode
+(Anthropic/OpenAI API), LangGraph
+
+EXECUTION STRATEGY:
+1. Define a Pydantic schema per agent's expected output.
+2. Write role-specific system prompts with few-shot examples.
+3. Parse and validate LLM output against the schema; retry on
+   parse failure.
+4. Test edge cases (empty results, ambiguous queries).
+
+INTERVIEW CONCEPT: Prompt engineering — few-shot prompting, role-
+based prompts, structured output enforcement.
+INTERVIEW Q: "How do you make LLM outputs reliably structured for
+downstream code to consume?"
+
+--------------------------------------------------------------------
+DAY 7 — Self-Correction / Reflection Loop
+--------------------------------------------------------------------
+DESCRIPTION:
+Build the Critic node as an LLM-as-judge: it scores the Writer's
+draft against the original query, and triggers a bounded retry
+(max 1-2 loops) with feedback if the answer is incomplete or weak.
+Explicitly cap retries to avoid infinite loops.
+
+TOOLS: LangGraph conditional edges, LLM-as-judge prompt, Python
+
+EXECUTION STRATEGY:
+1. Design a Critic prompt that scores completeness + relevance.
+2. Add a conditional edge: if score below threshold and
+   retry_count < max, loop back to Planner/Researcher with feedback.
+3. Increment retry_count each loop; force exit after cap is hit.
+4. Test with a deliberately hard/vague query to confirm looping
+   works and terminates.
+
+INTERVIEW CONCEPT: Reflection/self-correction loops in agentic
+systems.
+INTERVIEW Q: "How do you stop an agent from looping forever, and how
+do you know when to stop retrying?"
+
+--------------------------------------------------------------------
+DAY 8 — Groundedness Checking + Hallucination Mitigation
+--------------------------------------------------------------------
+DESCRIPTION:
+Require the Writer to cite which retrieved chunk/source supports
+each claim in its answer. Have the Critic specifically flag
+ungrounded claims (claims with no supporting source) as a distinct
+failure mode, separate from general "answer quality."
+
+TOOLS: LangGraph, Pydantic (citation schema), LLM-as-judge
+
+EXECUTION STRATEGY:
+1. Modify Writer's output schema to include source references
+   per claim.
+2. Modify Critic to check each claim against cited source content.
+3. Trigger retry specifically for ungrounded claims (distinct from
+   incompleteness).
+4. Test with a query where source data is sparse to confirm it
+   flags gaps instead of making things up.
+
+INTERVIEW CONCEPT: Hallucination mitigation via groundedness/citation
+checking.
+INTERVIEW Q: "How do you detect and reduce hallucination in a RAG
+pipeline?"
+
+--------------------------------------------------------------------
+DAY 9 — Agent Composition: Sub-Agent Integration (Project 2 Link)
+--------------------------------------------------------------------
+DESCRIPTION:
+Expose your AI Data Analyst Agent (Project 2) as a callable tool/
+sub-agent from the Planner. Add routing logic: structured-data
+questions get routed to the Data Analyst Agent, open-ended questions
+go through the research pipeline.
+
+TOOLS: LangGraph, FastAPI (internal API call to Project 2), MCP
+(optional, if wrapping Project 2 as an MCP tool)
+
+EXECUTION STRATEGY:
+1. Expose Project 2's core function as a callable endpoint or tool.
+2. Add a routing/classification step in the Planner (LLM-based
+   intent classification: "data question" vs. "research question").
+3. Wire the Planner to call the Data Analyst Agent when appropriate.
+4. Test with mixed queries to confirm correct routing.
+
+INTERVIEW CONCEPT: Agent-as-tool composition across systems.
+INTERVIEW Q: "How would you compose multiple specialized agents/
+systems into one product?"
+
+--------------------------------------------------------------------
+DAY 10 — Frontend: Query Input + Live Agent Trace
+--------------------------------------------------------------------
+DESCRIPTION:
+Build a React frontend with a query input box and a live trace panel
+showing which agent is running, what tools it called, and any
+retry/critique cycles. This visual trace is what makes demos
+memorable in interviews.
+
+TOOLS: React, WebSockets or Server-Sent Events (for live trace
+updates), Tailwind CSS (optional styling)
+
+EXECUTION STRATEGY:
+1. Build a simple query input + submit UI.
+2. Stream agent state updates to frontend via WebSocket/SSE.
+3. Render a step-by-step trace (Planner -> Researcher -> Critic ->
+   Writer) with status indicators.
+4. Display final answer with inline source citations.
+
+INTERVIEW CONCEPT: Observability into agent execution for end users.
+INTERVIEW Q: "How would you make an agentic system's behavior
+transparent to users?"
+
+--------------------------------------------------------------------
+DAY 11 — Observability + Logging (Backend)
+--------------------------------------------------------------------
+DESCRIPTION:
+Log every node's input/output/decision to PostgreSQL (or LangSmith
+if you want a managed option). This creates a full audit trail for
+debugging bad answers after the fact.
+
+TOOLS: PostgreSQL, LangSmith (optional), Python logging
+
+EXECUTION STRATEGY:
+1. Add a logging table: run_id, node_name, input, output, timestamp.
+2. Log at every LangGraph node transition.
+3. Build a simple query/script to reconstruct a full run's trace
+   from the logs.
+4. Test by intentionally causing a bad answer and tracing why.
+
+INTERVIEW CONCEPT: Observability/tracing for agentic systems.
+INTERVIEW Q: "How do you debug why an agent gave a bad answer, after
+the fact?"
+
+--------------------------------------------------------------------
+DAY 12 — Evaluation Framework (Golden Dataset)
+--------------------------------------------------------------------
+DESCRIPTION:
+Build a small golden set of 10-15 test queries covering simple
+factual, multi-hop, sparse-data, and data-analyst-routing cases.
+Auto-score each run on groundedness, completeness, and correct tool/
+agent usage using an LLM-as-judge script.
+
+TOOLS: Python, LLM-as-judge script, PostgreSQL (store eval results)
+
+EXECUTION STRATEGY:
+1. Write 10-15 golden queries with expected properties (not exact
+   answers — e.g., "must cite at least 2 sources").
+2. Write an eval script that runs each query and scores the output.
+3. Run the eval suite, log results, fix any bugs it surfaces.
+4. Keep the eval script in the repo as proof of a rigorous process.
+
+INTERVIEW CONCEPT: Evaluating LLM/agent systems; avoiding "vibes-
+based" evaluation.
+INTERVIEW Q: "How do you know your agent changes made things better,
+not worse?"
+
+--------------------------------------------------------------------
+DAY 13 — Dockerize + CI/CD + Cost Awareness
+--------------------------------------------------------------------
+DESCRIPTION:
+Containerize all services (FastAPI, Postgres, vector DB, frontend)
+with Docker Compose. Add a GitHub Actions workflow to run lint +
+smoke tests + the eval suite on each push. Optionally add basic
+response caching for repeated queries.
+
+TOOLS: Docker, Docker Compose, GitHub Actions, Redis (optional,
+for caching)
+
+EXECUTION STRATEGY:
+1. Write Dockerfiles for backend and frontend.
+2. Write docker-compose.yml wiring all services together.
+3. Add a GitHub Actions YAML running lint + eval suite on push.
+4. (Optional) Add Redis caching for identical repeated queries.
+
+INTERVIEW CONCEPT: CI/CD for AI systems; cost/latency management.
+INTERVIEW Q: "How do you keep LLM costs/latency under control in
+production?"
+
+--------------------------------------------------------------------
+DAY 14 — Documentation + Architecture Diagram + Polish
+--------------------------------------------------------------------
+DESCRIPTION:
+Write a comprehensive README mapping directly to the interview
+concepts covered: architecture choice, ReAct vs. Plan-and-Execute,
+retrieval quality, self-correction cap, groundedness mechanism, eval
+methodology, and the Project 2 sub-agent link. Include an
+architecture diagram and a short demo GIF of the trace UI.
+
+TOOLS: Markdown, draw.io/Excalidraw (diagram), screen recorder
+(GIF/demo)
+
+EXECUTION STRATEGY:
+1. Write README sections: Problem, Architecture, Key Decisions,
+   Tech Stack, How to Run, Sample Queries, Evaluation Results.
+2. Create a clean architecture diagram (agents, tools, data flow).
+3. Record a short GIF/video of the live demo with trace UI.
+4. Push final repo, tag a release (v1.0), and re-read the README as
+   your own interview prep sheet.
+
+INTERVIEW CONCEPT: Communicating technical design decisions clearly.
+INTERVIEW Q: "Walk me through a design decision you made and why."
+
+====================================================================
+END OF 14-DAY PLAN
+====================================================================
