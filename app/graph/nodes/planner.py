@@ -4,16 +4,6 @@ from app.graph.state import AgentState
 def run_planner(state: AgentState) -> AgentState:
     print("[planner] running")
     state["plan"] = ["stub-task-1", "stub-task-2"]
-    state["retrieved_docs"] = [
-        {
-            "name": "Amit",
-            "age":24
-        },
-        {
-            "name":"Sahil",
-            "age":25
-        }
-    ]
     return state
 
 
