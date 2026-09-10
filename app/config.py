@@ -20,4 +20,12 @@ class Settings:
         ).split(",")
     )
 
+    mcp_fetch_command: str = os.getenv("MCP_FETCH_SERVER_COMMAND", "npx")
+    mcp_fetch_args: list[str] = field(
+        default_factory=lambda: os.getenv(
+            "MCP_FETCH_SERVER_ARGS", "-y,@modelcontextprotocol/server-fetch"
+        ).split(",")
+    ) 
+
+
 settings = Settings()  
