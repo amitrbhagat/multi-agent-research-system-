@@ -4,6 +4,7 @@ import logging
 
 from pydantic import BaseModel, ValidationError
 from app.mcp.client import mcp_search_session
+from app.tools.retry_utils import with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ class WebSearchOutput(BaseModel):
     results:list[WebSearchResultItem]        
 
 
-
+@with_retry(max_attempts=3)
 async def _call_web_search_async(tool_input: WebSearchInput) -> WebSearchOutput:
     async with mcp_search_session() as session:
         response = await session.call_tool(

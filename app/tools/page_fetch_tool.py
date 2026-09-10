@@ -5,6 +5,7 @@ import logging
 from pydantic import BaseModel, ValidationError
 
 from app.mcp.client import mcp_fetch_session
+from app.tools.retry_utils import with_retry
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ class PageFetchOutput(BaseModel):
     content:str
 
 
+@with_retry(max_attempts=3)
 async def _call_page_fetch_async(tool_input: PageFetchInput) -> PageFetchOutput:
     async with mcp_fetch_session() as session:
         response = await session.call_tool(

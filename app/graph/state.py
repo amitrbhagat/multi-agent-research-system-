@@ -9,4 +9,5 @@ class AgentState(TypedDict):
     draft: str
     critique: dict
     retry_count: int
+    retrieval_failed: bool
     
