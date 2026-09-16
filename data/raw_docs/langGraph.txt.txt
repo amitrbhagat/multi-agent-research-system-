@@ -1,0 +1,7 @@
+LangGraph is a framework for building stateful applications with large language models.
+
+LangGraph represents an application as a graph of nodes and edges. Nodes perform actions, while edges determine how execution moves between nodes.
+
+LangGraph is useful for building workflows, agents, tool-calling systems, and applications that require state management.
+
+A LangGraph application can maintain information in a shared state as it moves through different nodes.
