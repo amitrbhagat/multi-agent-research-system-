@@ -2,6 +2,7 @@ from app.graph.state import AgentState
 from app.tools.page_fetch_tool import call_page_fetch
 from app.tools.web_search_tool import call_web_search
 from app.rag.vector_store import retrieve_local_context
+from app.rag.hybrid_retrieval import hybrid_retrieve
 
 
 
@@ -10,7 +11,7 @@ def run_researcher(state: AgentState) -> AgentState:
 
     query = state["query"]
 
-    local_docs = retrieve_local_context(query, top_k=5)
+    local_docs = hybrid_retrieve(query, top_k=5)
 
     search_results = call_web_search(query)
 

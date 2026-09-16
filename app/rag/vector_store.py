@@ -28,7 +28,7 @@ def query_collection(query_embedding: list[float], top_k: int=5)->dict:
 
 
 def retrieve_local_context(query: str, top_k :int = 5) -> list[dict]:
-    query_embedding = embed_texts([query])[0]
+    query_embedding = embed_texts([query], input_type="query")[0]
     results = query_collection(query_embedding, top_k=top_k)
 
     local_docs = []
@@ -44,3 +44,23 @@ def retrieve_local_context(query: str, top_k :int = 5) -> list[dict]:
     )
 
     return local_docs    
+
+
+
+def retrieve_candidates(query: str, candidates_k :int = 5) -> list[dict]:
+    query_embedding = embed_texts([query])[0]
+    results = query_collection(query_embedding, top_k=candidates_k)
+
+    candidates = []
+    documents = results.get("documents", [[]])[0]
+    metadatas = results.get("metadatas", [[]])[0]
+
+    for doc_text, meta in zip(documents, metadatas):
+        candidates.append({
+            "source": meta.get("source", "local"),
+            "content": doc_text,
+            "origin": "local_vector_store"
+        }
+    )
+
+    return candidates  
