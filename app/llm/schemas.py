@@ -24,3 +24,4 @@ class CriticOutput(BaseModel):
     score: float = Field(ge=0.0, le=1.0, description="Overall quality score")
     is_complete: bool = Field(description="Whether the draft fully answers the query")
     feedback: str = Field(description="Specific, actionable feedback for revision")
+

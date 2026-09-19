@@ -1,16 +1,26 @@
 from app.graph.state import AgentState
-from app.llm.client import call_llm_structured
+from app.llm.client import call_llm_structured, StructuredOutputError
 from app.llm.schemas import PlannerOutput
-from app.prompts.planner_prompt import build_planner_output
+from app.prompts.planner_prompt import build_planner_prompt
 
 
 def run_planner(state: AgentState) -> AgentState:
-    print("[planner] running")
+    if state["retry_count"] > 0:
+        print(f"[planner] retrying (retry_count={state['retry_count']})")
+    else:
+        print("[planner] initial run")
 
-    prompt = build_planner_output(state["query"])
-    result: PlannerOutput = call_llm_structured(prompt, PlannerOutput)
+    feedback = state["critique"].get("feedback") if state["retry_count"] > 0 else None
+    prompt = build_planner_prompt(state["query"], feedback=feedback)
 
-    state["plan"] = result.plan
+    try:
+        result: PlannerOutput = call_llm_structured(prompt, PlannerOutput)
+        state["plan"] = result.plan
+
+    except StructuredOutputError as e:
+        print(f"[planner] structured output failed: {e}")
+        state["plan"] = state["plan"] or ["fallback: answer using best available context"]
+
     return state
 
 

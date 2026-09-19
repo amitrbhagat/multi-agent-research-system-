@@ -12,5 +12,12 @@ Plan:
 """
 
 
-def build_planner_prompt(query: str) -> str:
-    return f"{PLANNER_SYSTEM_PROMPT}\n\nQuery: {query}"
+def build_planner_prompt(query: str, feedback: str | None=None) -> str:
+    prompt =  f"{PLANNER_SYSTEM_PROMPT}\n\nQuery: {query}"
+    if feedback:
+        prompt += (
+            f"\n\nA previous attempt at this query was scored as incomplete. "
+            f"Critic feedback: {feedback}\n"
+            f"Revise the plan to address this feedback."
+        )
+    return prompt  

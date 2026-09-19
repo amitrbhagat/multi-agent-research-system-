@@ -7,9 +7,17 @@ required JSON schema exactly.
 """
 
 
-def build_writer_prompt(query: str, retrieved_docs: list[dict]) -> str:
+def build_writer_prompt(query: str, retrieved_docs: list[dict], feedback: str | None=None) -> str:
     docs_text = "\n\n".join(
         f"[Source: {d.get('source', 'unknown')}]\n{d.get('content', '')[:800]}"
         for d in retrieved_docs
     )
-    return f"{WRITER_SYSTEM_PROMPT}\n\nQuery: {query}\n\nRetrieved documents:\n{docs_text}"
+
+    prompt = f"{WRITER_SYSTEM_PROMPT}\n\nQuery: {query}\n\nRetrieved documents:\n{docs_text}"
+    if feedback:
+        prompt += (
+            f"\n\nA previous draft was scored as incomplete. "
+            f"Critic feedback: {feedback}\n"
+            f"Revise the draft to address this feedback directly."
+        )
+    return prompt

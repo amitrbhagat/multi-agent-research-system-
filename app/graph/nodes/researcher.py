@@ -11,7 +11,7 @@ def run_researcher(state: AgentState) -> AgentState:
 
     query = state["query"]
 
-    local_docs = hybrid_retrieve(query, top_k=5)
+    local_docs = hybrid_retrieve(query, top_n=5)
 
     search_results = call_web_search(query)
 
