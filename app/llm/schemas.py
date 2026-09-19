@@ -16,7 +16,7 @@ class WriterOutput(BaseModel):
         description = "The answer to the user's query"
     )    
     key_points: list[str] = Field(
-        descrition = "The main claims made in the draft, for the Critic to check"
+        description = "The main claims made in the draft, for the Critic to check"
     )
 
 
