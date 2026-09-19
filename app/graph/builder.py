@@ -14,11 +14,12 @@ def route_after_research(state: AgentState) -> str:
 
 def route_after_critique(state: AgentState) -> str:
     score = state["critique"].get("score", 0.0)
-
-    if score >= SCORE_THRESHOLD:
-        return "end"
+    ungrounded = state["critique"].get("ungrounded_claims", [])
 
     if state["retry_count"] >= MAX_RETRIES:
+        return "end"
+
+    if score >= SCORE_THRESHOLD and not ungrounded:
         return "end"
 
     return "retry"
@@ -27,8 +28,20 @@ def route_after_critique(state: AgentState) -> str:
 def run_retry(state: AgentState) -> AgentState:
     state["retry_count"] += 1
 
-    print(f"[retry] retry_count={state['retry_count']}")
+    ungrounded = state["critique"].get("ungrounded_claims", [])
 
+    if ungrounded:
+        note = (
+            f"Groundedness failure: these claims had no valid supporting "
+            f"source: {ungrounded}. On retry, either find real support for "
+            f"them in the retrieved documents or remove them."
+        )
+
+        state["critique"]["feedback"] = (
+            state["critique"].get("feedback", "") + "\n" + note
+        )
+
+    print(f"[retry] incrementing retry_count to {state['retry_count']}")
     return state
 
 

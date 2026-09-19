@@ -12,4 +12,4 @@ class AgentState(TypedDict):
     critique: dict
     retry_count: int
     retrieval_failed: bool
-    
+    claims: list[dict]
