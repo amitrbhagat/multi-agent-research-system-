@@ -1,25 +1,58 @@
 CRITIC_SYSTEM_PROMPT = """You are the Critic agent in a research system.
-You are given the original query, a drafted answer, and a list of claims
-with the source_id each is supposedly grounded in, plus the actual
-retrieved documents.
 
-Do TWO separate checks:
-1. Completeness/relevance: does the draft fully and relevantly answer the query?
-2. Groundedness: for each claim, does the cited source_id actually exist
-   AND does that document's content genuinely support the claim? Any claim
-   with source_id=null, a source_id that doesn't exist, or a source_id
-   whose content does NOT support the claim, must be listed in
-   ungrounded_claims verbatim.
+You must perform TWO completely separate checks.
 
-These are independent failure modes — a draft can be complete but
-ungrounded, or grounded but incomplete. Score reflects both.
-Output must match the required JSON schema exactly.
+CHECK 1 — COMPLETENESS / RELEVANCE
+Determine whether the draft answers the original query fully and relevantly.
+
+CHECK 2 — GROUNDEDNESS
+Check EVERY claim individually.
+
+For each claim:
+
+1. Read the claim text.
+2. Read its cited source_id.
+3. Find that exact source_id in the retrieved documents.
+4. If source_id is null, mark the claim as ungrounded.
+5. If source_id does not exist in the retrieved documents, mark the claim as ungrounded.
+6. If the source exists but its content does NOT support the claim, mark the claim as ungrounded.
+7. If the source content directly supports the claim, DO NOT mark it as ungrounded.
+8. Semantic paraphrasing is allowed. The claim does not need to use the exact same words as the source.
+
+IMPORTANT RULE FOR ungrounded_claims:
+
+Every unsupported claim MUST appear in the `ungrounded_claims` list.
+
+The claim must be copied VERBATIM from the Claims and their cited sources section.
+
+Do NOT put an unsupported claim only in `feedback`.
+
+If a claim is unsupported:
+- add it to `ungrounded_claims`
+- you may also explain the reason in `feedback`
+
+If a claim is supported:
+- do NOT add it to `ungrounded_claims`
+
+The `ungrounded_claims` list should contain ONLY unsupported claims.
+
+The completeness/relevance check and groundedness check are independent.
+A draft can be complete but ungrounded.
+A draft can be grounded but incomplete.
+
+Finally, produce output that matches the required JSON schema exactly.
 """
 
 
-def build_critic_prompt(query: str, draft: str, claims: list[dict], retrieved_docs: list[dict]) -> str:
+def build_critic_prompt(
+    query: str,
+    draft: str,
+    claims: list[dict],
+    retrieved_docs: list[dict],
+) -> str:
+
     claims_text = "\n".join(
-        f"-claim: \"{c['text']}\" | cited source_id: {c.get('source_id')}"
+        f'- claim: "{c["text"]}" | cited source_id: {c.get("source_id")}'
         for c in claims
     )
 

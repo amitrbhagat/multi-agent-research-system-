@@ -6,7 +6,7 @@ from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "tinyllama"
+DEFAULT_MODEL = "llama3.2:1b"
 
 
 class StructuredOutputError(Exception):
