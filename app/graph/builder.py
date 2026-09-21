@@ -6,6 +6,15 @@ from app.graph.nodes.critic import run_critic
 from app.graph.nodes.researcher import run_researcher
 from app.graph.nodes.writer import run_writer
 from app.graph.nodes.fallback import run_fallback
+from app.data_analyst.intent_classifier import classify_intent
+from app.graph.nodes.data_analyst import run_data_analyst
+
+
+
+def route_after_planner(state: AgentState) -> str:
+    intent = classify_intent(state["query"])
+    state["intent"] = intent
+    return "data_analyst" if intent=="data" else "researcher"
 
 
 def route_after_research(state: AgentState) -> str:
@@ -49,6 +58,7 @@ def build_graph():
     graph = StateGraph(AgentState)
 
     graph.add_node("planner", run_planner)
+    graph.add_node("data_analyst", run_data_analyst)
     graph.add_node("researcher", run_researcher)
     graph.add_node("writer", run_writer)
     graph.add_node("critic", run_critic)
@@ -57,7 +67,14 @@ def build_graph():
 
     graph.set_entry_point("planner")
 
-    graph.add_edge("planner", "researcher")
+    graph.add_conditional_edges(
+        "planner",
+        route_after_planner,
+        {"data_analyst": "data_analyst", "researcher": "researcher"}
+    )
+
+    graph.add_edge("data_analyst", END)
+
 
     graph.add_conditional_edges(
         "researcher",

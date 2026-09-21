@@ -6,6 +6,7 @@ SCORE_THRESHOLD = 0.7
 
 class AgentState(TypedDict):
     query: str
+    intent: str
     plan: list[str]
     retrieved_docs: list[dict]
     draft: str
@@ -13,3 +14,5 @@ class AgentState(TypedDict):
     retry_count: int
     retrieval_failed: bool
     claims: list[dict]
+    analyst_result: dict
+    
