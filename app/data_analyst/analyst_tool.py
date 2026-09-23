@@ -23,11 +23,13 @@ def answer_data_question(query: str) -> dict:
                 value = df[column].mean()
                 return {"answer": f"The average {column} is {value:.2f}" ,"value": value} 
 
+
         if "total" in query_lower or "sum" in query_lower:
             column = _guess_numeric_column(df, query) 
             if column:
                 value = df[column].sum()
                 return {"answer": f"The total {column} is {value:.2f}" ,"value": value}  
+
 
         if "max" in query_lower or "highest" in query_lower:
             column = _guess_numeric_column(df, query) 
