@@ -2,6 +2,7 @@ import QueryInput from "./components/QueryInput";
 import TracePanel from "./components/TracePanel";
 import { useAgentStream } from "./hooks/useAgentStream";
 
+
 export default function App() {
   const { trace, isRunning, finalState, runQuery } = useAgentStream();
 

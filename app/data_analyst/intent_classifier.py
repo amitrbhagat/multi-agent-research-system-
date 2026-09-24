@@ -1,26 +1,18 @@
-from pydantic import BaseModel
-from app.llm.client import call_llm_structured, StructuredOutputError
-
-
-INTENT_PROMPT = """Classify the following user query into exactly one category:
-- "data" — the query asks for a specific number, statistic, average, total, or comparison from a structured dataset
-- "research" — the query is open-ended, conceptual, or requires synthesizing information from multiple sources
-
-Query: {query}
-
-Respond with only the category label.
-"""
-
-
-class IntentOutput(BaseModel):
-    intent: str
+DATA_KEYWORDS = (
+    "average", "mean", "total", "sum", "highest", "lowest",
+    "maximum", "minimum", "how many", "count", "median",
+)
 
 
 def classify_intent(query: str) -> str:
-    prompt = INTENT_PROMPT.format(query=query)
-    try:
-        result: IntentOutput = call_llm_structured(prompt, IntentOutput)
-        label = result.intent.strip().lower()
-        return label if label in ("data", "research") else "research"
-    except StructuredOutputError:
-        return "research"
+    """
+    Deterministic, rule-based intent classification.
+    No LLM call — given the narrow, fixed set of operations
+    answer_data_question() actually supports (avg/sum/max/total),
+    keyword matching is more reliable than a small local model's
+    judgment call, and costs zero inference time.
+    """
+    query_lower = query.lower()
+    if any(keyword in query_lower for keyword in DATA_KEYWORDS):
+        return "data"
+    return "research"
