@@ -1,4 +1,5 @@
 import json
+import uuid
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -41,6 +42,7 @@ def run_query(request: QueryRequest):
 
 def _initial_state(query: str) -> AgentState:
     return {
+        "run_id": str(uuid.uuid4()),
         "query": query,
         "intent": "",
         "plan": [],

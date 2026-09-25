@@ -9,6 +9,8 @@ from app.graph.nodes.fallback import run_fallback
 from app.data_analyst.intent_classifier import classify_intent
 from app.graph.nodes.data_analyst import run_data_analyst
 
+from app.db.logging_utils import with_logging
+
 
 
 def route_after_planner(state: AgentState) -> str:
@@ -57,13 +59,13 @@ def run_retry(state: AgentState) -> AgentState:
 def build_graph():
     graph = StateGraph(AgentState)
 
-    graph.add_node("planner", run_planner)
-    graph.add_node("data_analyst", run_data_analyst)
-    graph.add_node("researcher", run_researcher)
-    graph.add_node("writer", run_writer)
-    graph.add_node("critic", run_critic)
-    graph.add_node("retry", run_retry)
-    graph.add_node("fallback", run_fallback)
+    graph.add_node("planner", with_logging(run_planner))
+    graph.add_node("data_analyst", with_logging(run_data_analyst))
+    graph.add_node("researcher", with_logging(run_researcher))
+    graph.add_node("writer", with_logging(run_writer))
+    graph.add_node("critic", with_logging(run_critic))
+    graph.add_node("retry", with_logging(run_retry))
+    graph.add_node("fallback", with_logging(run_fallback))
 
     graph.set_entry_point("planner")
 

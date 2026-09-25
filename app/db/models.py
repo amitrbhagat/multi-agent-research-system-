@@ -9,7 +9,7 @@ Base = declarative_base()
 
 class RunLog(Base):
 
-    __table_name__ = "run_logs"
+    __tablename__ = "run_logs"
 
     id = Column(Integer, primary_key=True)
     run_id = Column(String, index=True)

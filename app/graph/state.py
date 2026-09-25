@@ -5,6 +5,7 @@ SCORE_THRESHOLD = 0.7
 
 
 class AgentState(TypedDict):
+    run_id: str
     query: str
     intent: str
     plan: list[str]
