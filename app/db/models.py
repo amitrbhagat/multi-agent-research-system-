@@ -17,3 +17,17 @@ class RunLog(Base):
     input_data = Column(Text)
     output_data = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+
+class EvalResult(Base):
+    __tablename__ = "eval_results"
+
+    id = Column(Integer, primary_key=True)
+    eval_run_id = Column(String, index=True)    
+    query_id = Column(String)                    
+    query = Column(Text)
+    run_id = Column(String)                      
+    passed = Column(String)                      
+    details = Column(Text)                       
+    created_at = Column(DateTime, default=datetime.utcnow)
