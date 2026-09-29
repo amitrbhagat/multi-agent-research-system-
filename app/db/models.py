@@ -31,3 +31,4 @@ class EvalResult(Base):
     passed = Column(String)                      
     details = Column(Text)                       
     created_at = Column(DateTime, default=datetime.utcnow)
+    
